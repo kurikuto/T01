@@ -1,9 +1,51 @@
-import { NextPage } from "next";
+import { GetServerSideProps, NextPage } from "next";
+import { useEffect, useState } from "react";
+import styles from "./index.module.css";
 
-const IndexPage: NextPage = () => {
-  return <div>猫画像予定地</div>;
+type Props = {
+  initialImageUrl: string;
+}
+
+const IndexPage: NextPage<Props> = ({ initialImageUrl }) => {
+  // 状態を定義
+  const [imageUrl, setImageUrl] = useState(initialImageUrl);
+  const [loading, setLoading] = useState(false);
+  // マウント時に画像を読み込む
+  // useEffect(() => {
+  //   fetchImage().then((newImage) => {
+  //     setImageUrl(newImage.url); // 画像URLを更新
+  //     setLoading(false);
+  //   })
+  // }, []);
+  // ボタンをクリックしたときに画像を読み込む処理
+  const handleClick = async () => {
+    setLoading(true);
+    const newImage = await fetchImage();
+    setImageUrl(newImage.url);
+    setLoading(false);
+  }
+
+  // ローディング中でなければ、画像を表示する
+  return (
+    <div className={styles.page}>
+      <button onClick={handleClick} className={styles.button}>他のにゃんこも見る</button>
+      <div className={styles.frame}>
+        {loading || <img src={imageUrl}/>}
+      </div>
+    </div>
+  );
 };
 export default IndexPage;
+
+// サーバーサイドで実行する処理
+export const getServerSideProps: GetServerSideProps<Props> = async () => {
+  const image = await fetchImage();
+  return {
+    props: {
+      initialImageUrl: image.url,
+    },
+  };
+};
 
 type Image = {
   url: string;
@@ -16,8 +58,7 @@ const fetchImage = async (): Promise<Image> => {
     throw new Error("猫の画像が取得できませんでした");
   }
   const image: unknown = images[0];
-  console.log(images);
-  if (isImage(image)) {
+  if (!isImage(image)) {
     throw new Error("猫の画像が取得できませんでした");
   }
   return images[0];
